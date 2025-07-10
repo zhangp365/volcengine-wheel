@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: '火山引擎SDK版本号 (例如: 1.0.0)'
+        description: '火山引擎SDK版本号 (例如: v1.0.0)'
         required: true
         type: string
       source_repo:
@@ -65,10 +65,10 @@ jobs:
     - name: 创建Release
       uses: softprops/action-gh-release@v1
       with:
-        tag_name: v${{ github.event.inputs.version }}
-        name: Release v${{ github.event.inputs.version }}
+        tag_name: ${{ github.event.inputs.version }}
+        name: Release ${{ github.event.inputs.version }}
         body: |
-          ## 火山引擎SDK v${{ github.event.inputs.version }}
+          ## 火山引擎SDK ${{ github.event.inputs.version }}
           
           包含以下Python版本的wheel包：
           - Python 3.7
@@ -81,5 +81,4 @@ jobs:
         files: wheels/**/*.whl
         draft: false
         prerelease: false
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
+        token: ${{ secrets.GITHUB_TOKEN }} 
