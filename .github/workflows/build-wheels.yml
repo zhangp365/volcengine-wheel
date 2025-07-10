@@ -1,0 +1,85 @@
+name: Build and Release Wheels
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: '火山引擎SDK版本号 (例如: 1.0.0)'
+        required: true
+        type: string
+      source_repo:
+        description: '源代码仓库地址'
+        required: false
+        default: 'https://github.com/volcengine/volc-sdk-python.git'
+        type: string
+
+jobs:
+  build-wheels:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        python-version: ['3.7', '3.9', '3.10', '3.11', '3.12']
+    
+    steps:
+    - name: 检出代码
+      uses: actions/checkout@v4
+      
+    - name: 设置Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+        
+    - name: 安装构建依赖
+      run: |
+        python -m pip install --upgrade pip
+        pip install wheel setuptools build
+        
+    - name: 克隆火山引擎SDK源码
+      run: |
+        git clone ${{ github.event.inputs.source_repo }} volc-sdk-source
+        cd volc-sdk-source
+        git checkout v${{ github.event.inputs.version }}
+        
+    - name: 构建wheel包
+      run: |
+        cd volc-sdk-source
+        python -m build --wheel
+        
+    - name: 上传构建产物
+      uses: actions/upload-artifact@v3
+      with:
+        name: wheel-python-${{ matrix.python-version }}
+        path: volc-sdk-source/dist/*.whl
+        
+  create-release:
+    needs: build-wheels
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+    
+    steps:
+    - name: 下载所有构建产物
+      uses: actions/download-artifact@v3
+      with:
+        path: wheels
+        
+    - name: 创建Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: v${{ github.event.inputs.version }}
+        name: Release v${{ github.event.inputs.version }}
+        body: |
+          ## 火山引擎SDK v${{ github.event.inputs.version }}
+          
+          包含以下Python版本的wheel包：
+          - Python 3.7
+          - Python 3.9
+          - Python 3.10
+          - Python 3.11
+          - Python 3.12
+          
+          构建时间: ${{ github.event.head_commit.timestamp }}
+        files: wheels/**/*.whl
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
