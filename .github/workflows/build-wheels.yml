@@ -62,6 +62,10 @@ jobs:
       with:
         path: wheels
         
+    - name: 列出下载的文件
+      run: |
+        find wheels -type f -name "*.whl" | head -20
+        
     - name: 创建Release
       uses: softprops/action-gh-release@v1
       with:
@@ -78,7 +82,13 @@ jobs:
           - Python 3.12
           
           构建时间: ${{ github.event.head_commit.timestamp }}
-        files: wheels/**/*.whl
+        files: |
+          wheels/wheel-python-3.7/**/*.whl
+          wheels/wheel-python-3.9/**/*.whl
+          wheels/wheel-python-3.10/**/*.whl
+          wheels/wheel-python-3.11/**/*.whl
+          wheels/wheel-python-3.12/**/*.whl
+        generate_release_notes: false
         draft: false
         prerelease: false
         token: ${{ secrets.GITHUB_TOKEN }} 
