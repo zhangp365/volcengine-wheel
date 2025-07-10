@@ -72,7 +72,9 @@ jobs:
           # 获取原始文件名（不含路径）
           filename=$(basename "$wheel_file")
           # 在文件名中插入Python版本信息
-          new_filename=$(echo "$filename" | sed "s/-py3-none-any/-py${python_version}-any/")
+          # 将版本号中的点号去掉，例如 3.10 -> 310
+          python_tag=$(echo "$python_version" | sed 's/\.//g')
+          new_filename=$(echo "$filename" | sed "s/-py3-none-any/-py${python_tag}-none-win_amd64/")
           cp "$wheel_file" "release-files/$new_filename"
         done
         echo "=== 整理后的文件 ==="
@@ -99,11 +101,11 @@ jobs:
           ## 火山引擎SDK ${{ github.event.inputs.version }}
           
           包含以下Python版本的wheel包：
-          - Python 3.7 (volcengine-${{ github.event.inputs.version }}-py37-any.whl)
-          - Python 3.9 (volcengine-${{ github.event.inputs.version }}-py39-any.whl)
-          - Python 3.10 (volcengine-${{ github.event.inputs.version }}-py310-any.whl)
-          - Python 3.11 (volcengine-${{ github.event.inputs.version }}-py311-any.whl)
-          - Python 3.12 (volcengine-${{ github.event.inputs.version }}-py312-any.whl)
+          - Python 3.7 (volcengine-${{ github.event.inputs.version }}-py37-none-win_amd64.whl)
+          - Python 3.9 (volcengine-${{ github.event.inputs.version }}-py39-none-win_amd64.whl)
+          - Python 3.10 (volcengine-${{ github.event.inputs.version }}-py310-none-win_amd64.whl)
+          - Python 3.11 (volcengine-${{ github.event.inputs.version }}-py311-none-win_amd64.whl)
+          - Python 3.12 (volcengine-${{ github.event.inputs.version }}-py312-none-win_amd64.whl)
           
           构建时间: ${{ github.event.head_commit.timestamp }}
         files: release-files/*.whl
