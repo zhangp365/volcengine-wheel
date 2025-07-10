@@ -62,9 +62,24 @@ jobs:
       with:
         path: wheels
         
+    - name: 整理文件
+      run: |
+        mkdir -p release-files
+        find wheels -name "*.whl" -exec cp {} release-files/ \;
+        echo "=== 整理后的文件 ==="
+        ls -la release-files/
+        
     - name: 列出下载的文件
       run: |
+        echo "=== 文件结构 ==="
         find wheels -type f -name "*.whl" | head -20
+        echo "=== 目录结构 ==="
+        ls -la wheels/
+        echo "=== 子目录内容 ==="
+        for dir in wheels/*/; do
+          echo "--- $dir ---"
+          ls -la "$dir" 2>/dev/null || echo "目录不存在"
+        done
         
     - name: 创建Release
       uses: softprops/action-gh-release@v1
@@ -82,12 +97,7 @@ jobs:
           - Python 3.12
           
           构建时间: ${{ github.event.head_commit.timestamp }}
-        files: |
-          wheels/wheel-python-3.7/**/*.whl
-          wheels/wheel-python-3.9/**/*.whl
-          wheels/wheel-python-3.10/**/*.whl
-          wheels/wheel-python-3.11/**/*.whl
-          wheels/wheel-python-3.12/**/*.whl
+        files: release-files/*.whl
         generate_release_notes: false
         draft: false
         prerelease: false
