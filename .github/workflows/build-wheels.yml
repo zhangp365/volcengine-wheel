@@ -65,7 +65,16 @@ jobs:
     - name: 整理文件
       run: |
         mkdir -p release-files
-        find wheels -name "*.whl" -exec cp {} release-files/ \;
+        # 为每个wheel文件添加Python版本标识
+        for wheel_file in $(find wheels -name "*.whl"); do
+          # 从路径中提取Python版本
+          python_version=$(echo "$wheel_file" | grep -o 'python-[0-9.]*' | sed 's/python-//')
+          # 获取原始文件名（不含路径）
+          filename=$(basename "$wheel_file")
+          # 在文件名中插入Python版本信息
+          new_filename=$(echo "$filename" | sed "s/-py3-none-any/-py3${python_version}-any/")
+          cp "$wheel_file" "release-files/$new_filename"
+        done
         echo "=== 整理后的文件 ==="
         ls -la release-files/
         
@@ -90,11 +99,11 @@ jobs:
           ## 火山引擎SDK ${{ github.event.inputs.version }}
           
           包含以下Python版本的wheel包：
-          - Python 3.7
-          - Python 3.9
-          - Python 3.10
-          - Python 3.11
-          - Python 3.12
+          - Python 3.7 (volcengine-${{ github.event.inputs.version }}-py37-any.whl)
+          - Python 3.9 (volcengine-${{ github.event.inputs.version }}-py39-any.whl)
+          - Python 3.10 (volcengine-${{ github.event.inputs.version }}-py310-any.whl)
+          - Python 3.11 (volcengine-${{ github.event.inputs.version }}-py311-any.whl)
+          - Python 3.12 (volcengine-${{ github.event.inputs.version }}-py312-any.whl)
           
           构建时间: ${{ github.event.head_commit.timestamp }}
         files: release-files/*.whl
