@@ -38,7 +38,7 @@ jobs:
       run: |
         git clone ${{ github.event.inputs.source_repo }} volc-sdk-source
         cd volc-sdk-source
-        git checkout v${{ github.event.inputs.version }}
+        git checkout ${{ github.event.inputs.version }}
         
     - name: 构建wheel包
       run: |
