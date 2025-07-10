@@ -72,7 +72,7 @@ jobs:
           # 获取原始文件名（不含路径）
           filename=$(basename "$wheel_file")
           # 在文件名中插入Python版本信息
-          new_filename=$(echo "$filename" | sed "s/-py3-none-any/-py3${python_version}-any/")
+          new_filename=$(echo "$filename" | sed "s/-py3-none-any/-py${python_version}-any/")
           cp "$wheel_file" "release-files/$new_filename"
         done
         echo "=== 整理后的文件 ==="
