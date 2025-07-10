@@ -5,7 +5,7 @@
 <a name="english"></a>
 ## English
 
-This project builds wheel packages for Volcengine SDK, supporting multiple Python versions.
+This project builds wheel packages for Volcengine SDK (https://github.com/volcengine/volc-sdk-python), supporting multiple Python versions.
 
 ### Features
 
@@ -18,7 +18,7 @@ This project builds wheel packages for Volcengine SDK, supporting multiple Pytho
 <a name="chinese"></a>
 ## 中文
 
-这个项目构建火山引擎SDK的wheel包，支持多个Python版本。
+这个项目构建火山引擎SDK (https://github.com/volcengine/volc-sdk-python) 的wheel包，支持多个Python版本。
 
 ### 功能特性
 
