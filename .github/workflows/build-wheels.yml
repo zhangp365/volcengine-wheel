@@ -51,12 +51,9 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  build-wheels:
+  build-wheels-manual:
     runs-on: windows-latest
-    needs: [check-new-version]
-    if: |
-      github.event_name == 'workflow_dispatch' || 
-      (github.event_name == 'schedule' && needs.check-new-version.outputs.has_new_version == 'true')
+    if: github.event_name == 'workflow_dispatch'
     
     steps:
     - name: 检出代码
@@ -76,11 +73,7 @@ jobs:
       run: |
         git clone https://github.com/volcengine/volc-sdk-python.git volc-sdk-source
         cd volc-sdk-source
-        if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-          git checkout ${{ github.event.inputs.version }}
-        else
-          git checkout ${{ needs.check-new-version.outputs.latest_version }}
-        fi
+        git checkout ${{ github.event.inputs.version }}
         
     - name: 构建wheel包
       run: |
@@ -90,21 +83,55 @@ jobs:
     - name: 上传构建产物
       uses: actions/upload-artifact@v4
       with:
-        name: wheel-package
+        name: wheel-package-manual
+        path: volc-sdk-source/dist/*.whl
+
+  build-wheels-auto:
+    runs-on: windows-latest
+    needs: [check-new-version]
+    if: github.event_name == 'schedule' && needs.check-new-version.outputs.has_new_version == 'true'
+    
+    steps:
+    - name: 检出代码
+      uses: actions/checkout@v4
+      
+    - name: 设置Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+        
+    - name: 安装构建依赖
+      run: |
+        python -m pip install --upgrade pip
+        pip install wheel setuptools build
+        
+    - name: 克隆火山引擎SDK源码
+      run: |
+        git clone https://github.com/volcengine/volc-sdk-python.git volc-sdk-source
+        cd volc-sdk-source
+        git checkout ${{ needs.check-new-version.outputs.latest_version }}
+        
+    - name: 构建wheel包
+      run: |
+        cd volc-sdk-source
+        python -m build --wheel
+        
+    - name: 上传构建产物
+      uses: actions/upload-artifact@v4
+      with:
+        name: wheel-package-auto
         path: volc-sdk-source/dist/*.whl
         
-  create-release:
-    needs: [check-new-version, build-wheels]
+  create-release-manual:
+    needs: [build-wheels-manual]
     runs-on: ubuntu-latest
-    if: |
-      (github.event_name == 'workflow_dispatch') || 
-      (github.event_name == 'schedule' && needs.check-new-version.outputs.has_new_version == 'true')
+    if: github.event_name == 'workflow_dispatch'
     
     steps:
     - name: 下载构建产物
       uses: actions/download-artifact@v4
       with:
-        name: wheel-package
+        name: wheel-package-manual
         path: wheels
         
     - name: 整理文件
@@ -118,15 +145,51 @@ jobs:
     - name: 创建Release
       uses: softprops/action-gh-release@v1
       with:
-        tag_name: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.version || needs.check-new-version.outputs.latest_version }}
-        name: Release ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.version || needs.check-new-version.outputs.latest_version }}
+        tag_name: ${{ github.event.inputs.version }}
+        name: Release ${{ github.event.inputs.version }}
         body: |
-          ## 火山引擎SDK ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.version || needs.check-new-version.outputs.latest_version }}
+          ## 火山引擎SDK ${{ github.event.inputs.version }}
           
           包含通用的wheel包，支持所有Python版本。
           
-          构建时间: ${{ github.event.head_commit.timestamp || github.event.schedule }}
-          ${{ github.event_name == 'schedule' && format('自动构建 - 触发时间: {0}', github.event.schedule) || '' }}
+          构建时间: ${{ github.event.head_commit.timestamp }}
+        files: release-files/*.whl
+        generate_release_notes: false
+        draft: false
+        prerelease: false
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+  create-release-auto:
+    needs: [check-new-version, build-wheels-auto]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule' && needs.check-new-version.outputs.has_new_version == 'true'
+    
+    steps:
+    - name: 下载构建产物
+      uses: actions/download-artifact@v4
+      with:
+        name: wheel-package-auto
+        path: wheels
+        
+    - name: 整理文件
+      run: |
+        mkdir -p release-files
+        # 复制所有wheel文件到release目录
+        cp wheels/*.whl release-files/
+        echo "=== 整理后的文件 ==="
+        ls -la release-files/
+        
+    - name: 创建Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ needs.check-new-version.outputs.latest_version }}
+        name: Release ${{ needs.check-new-version.outputs.latest_version }}
+        body: |
+          ## 火山引擎SDK ${{ needs.check-new-version.outputs.latest_version }}
+          
+          包含通用的wheel包，支持所有Python版本。
+          
+          自动构建 - 触发时间: ${{ github.event.schedule }}
         files: release-files/*.whl
         generate_release_notes: false
         draft: false
